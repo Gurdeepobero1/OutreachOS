@@ -1,13 +1,26 @@
 export async function POST(req) {
   const body = await req.json();
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+
+  const messages = [
+    { role: "system", content: body.system },
+    ...body.messages
+  ];
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01"
+      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages,
+      max_tokens: 1000,
+      temperature: 0.7
+    })
   });
-  return Response.json(await res.json());
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content || "";
+  return Response.json({ content: [{ text }] });
 }
